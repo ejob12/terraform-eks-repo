@@ -1,0 +1,70 @@
+name: Terraform EKS Pipeline
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  TF_VERSION: latest
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_DEFAULT_REGION: us-west-2  # Replace with your desired AWS region
+
+jobs:
+  terraform:
+    name: Terraform EKS Deployment
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Terraform
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      # Step 3: Initialize Terraform
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      # Step 4: Validate Terraform configuration
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
+
+      # Step 5: Generate Terraform plan
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -input=false -out=tfplan
+        continue-on-error: true
+
+      # Step 6: Fail the job if the plan step fails
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+      # Step 7: Apply Terraform changes (only on push to main branch)
+      #- name: Terraform Apply
+       # if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+       # run: terraform apply -input=false tfplan
+
+      # Step 8: Configure kubectl to interact with the EKS cluster
+      #- name: Configure kubectl
+       # if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+       # run: |
+        #  aws eks --region ${{ env.AWS_DEFAULT_REGION }} update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }}
+       # env:
+         # EKS_CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME }}  # Name of the EKS cluster
+
+      # Step 9: Verify EKS cluster access
+      #- name: Verify EKS Cluster Access
+      #  if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      #  run: kubectl get nodes

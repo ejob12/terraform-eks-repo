@@ -1,5 +1,5 @@
 resource "aws_iam_role" "demo" {
-  name = "class21-dev"
+  name = "class27-dev"
 
   assume_role_policy = <<POLICY
 {

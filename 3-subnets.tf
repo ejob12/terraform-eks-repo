@@ -1,3 +1,6 @@
+###############################################
+# PRIVATE SUBNETS
+###############################################
 resource "aws_subnet" "private-us-east-1a" {
   vpc_id            = aws_vpc.dev.id
   cidr_block        = "10.0.0.0/19"
@@ -22,6 +25,9 @@ resource "aws_subnet" "private-us-east-1b" {
   }
 }
 
+###############################################
+# PUBLIC SUBNETS
+###############################################
 resource "aws_subnet" "public-us-east-1a" {
   vpc_id                  = aws_vpc.dev.id
   cidr_block              = "10.0.64.0/19"
@@ -47,3 +53,30 @@ resource "aws_subnet" "public-us-east-1b" {
     "kubernetes.io/cluster/demo" = "owned"
   }
 }
+
+###############################################
+# PUBLIC ROUTE TABLES & ASSOCIATIONS
+###############################################
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.dev.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.dev-igw.id
+  }
+
+  tags = {
+    Name = "public-route-table"
+  }
+}
+
+resource "aws_route_table_association" "public-us-east-1a" {
+  subnet_id      = aws_subnet.public-us-east-1a.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "public-us-east-1b" {
+  subnet_id      = aws_subnet.public-us-east-1b.id
+  route_table_id = aws_route_table.public.id
+}
+
